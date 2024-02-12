@@ -145,6 +145,9 @@ impl Tile {
         let data_flip = self.data.slice_mut(s![.., ..;-1]).to_owned();
         self.data = data_flip;
     }
+    fn center(&self) -> ArrayView2<u8> {
+        self.data.slice(s![1..-1, 1..-1])
+    }
 }
 
 #[cfg(test)]
@@ -173,6 +176,33 @@ mod tests {
                 [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
                 [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            ])
+        );
+    }
+   
+    #[test]
+    fn test_center_eye3() {
+        // given
+        let mut tile = Tile::from_arr2(0, Array::eye(3));
+        // then
+        assert_eq!(
+            tile.center(),
+            arr2(&[
+                 [1],
+            ])
+        );
+    }
+
+    #[test]
+    fn test_center_eye4() {
+        // given
+        let mut tile = Tile::from_arr2(0, Array::eye(4));
+        // then
+        assert_eq!(
+            tile.center(),
+            arr2(&[
+                 [1,0],
+                 [0,1],
             ])
         );
     }
