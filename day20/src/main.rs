@@ -48,6 +48,7 @@ fn main() -> std::io::Result<()> {
             .reduce(|acc, e| acc * e)
             .unwrap()
     );
+
     Ok(())
 }
 
@@ -205,5 +206,42 @@ mod tests {
                  [0,1],
             ])
         );
+    }
+
+
+    #[test]
+    fn test_flip_and_rotate_some_tiles() {
+        // given
+        let mut tile1 = Tile::from_arr2(0, arr2(&[
+            [0u8, 1,1,1,1],
+            [0, 1, 1,1,1],
+            [0,1,1,1,1],
+            [0,1,1,1,1],
+            [0,0,0,1,1],
+        ]));
+        let mut tile2 = Tile::from_arr2(0, arr2(&[
+            [0u8, 0,1,1,1],
+            [0, 1, 1,1,1],
+            [0,1,1,1,1],
+            [1,1,1,1,1],
+            [0,0,1,1,1],
+
+        ]));
+        let mut tile3 = Tile::from_arr2(0, arr2(&[
+            [0u8, 1,0,1,1],
+            [0, 1, 1,1,0],
+            [1,1,1,1,1],
+            [1,1,1,1,0],
+            [1,0,0,0,1],
+        ]));
+        // when
+        // then
+        assert!(
+            tile1.is_neighbor(&tile2)
+        );
+        assert!(
+            tile2.is_neighbor(&tile3)
+        );
+        assert!(!tile1.is_neighbor(&tile3));
     }
 }
