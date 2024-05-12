@@ -65,8 +65,6 @@ fn main() {
         if bags[&key].total_bags.is_some() {
             continue;
         }
-        // let mut seen = vec!();
-
         let mut unseen = vec![key.clone()];
         unseen.extend(bags[&key].contains.clone());
         while let Some(target) = unseen.pop() {
@@ -89,7 +87,7 @@ fn main() {
                         // println!("All contained bags have total bag counts");
                         let target_bag = &bags[&target];
                         let total_bags = zip(&target_bag.contains, &target_bag.num_bags)
-                            .map(|(name, n)| bags[name].total_bags.unwrap_or(0i64) * n)
+                            .map(|(name, n)| bags[name].total_bags.unwrap() * n)
                             .sum::<i64>()
                             + 1;
                         bags.get_mut(&target).unwrap().total_bags = Some(total_bags);
