@@ -10,6 +10,7 @@ fn main() {
         .collect();
 
     let mut layout2 = layout.clone();
+    let mut i = 0;
     loop {
         for i in 0..layout.len() {
             for j in 0..layout[0].len() {
@@ -24,14 +25,19 @@ fn main() {
             break;
         }
         layout = layout2.clone();
+        i += 1;
+        // if i == 2 {
+        //     break;
+        // }
     }
     dbg!(to_string_vec(&layout2));
     let n_occupied: usize = layout2
         .iter()
-        .map(|row| row.iter().filter(|char| **char == '#').count())
+        .map(|row| row.iter().filter(|&&char| char == '#').count())
         .sum();
     dbg!(n_occupied);
 }
+
 fn n_seats_changed(layout1: &Vec<Vec<char>>, layout2: &Vec<Vec<char>>) -> u32 {
     let mut n_changes = 0;
     for (row1, row2) in zip(layout1, layout2) {
@@ -44,27 +50,54 @@ fn n_seats_changed(layout1: &Vec<Vec<char>>, layout2: &Vec<Vec<char>>) -> u32 {
     }
     n_changes
 }
+
 fn calc_seat_state(layout: &Vec<Vec<char>>, x: usize, y: usize) -> char {
+    // dbg!(y, x);
     let xi32 = x as i32;
     let yi32 = y as i32;
     let mut n_occupied: u32 = 0;
-    for py in (yi32 - 1)..(yi32 + 2) {
-        for px in (xi32 - 1)..(xi32 + 2) {
-            if py == yi32 && px == xi32 {
+    // directions start at top left and go clockwise. Last direction is left.
+    let mut directions_explored = [false; 8];
+    let directions = [
+        (-1i32, -1),
+        (-1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+        (1, 0),
+        (1, -1),
+        (0, -1),
+    ];
+    let mut dir_factor = 0;
+    while !directions_explored.iter().all(|&d| d) {
+        dir_factor += 1;
+        // dbg!(dir_factor);
+        // dbg!(&directions_explored);
+        for (idx, (d_y, d_x)) in directions.iter().enumerate() {
+            if directions_explored[idx] {
                 continue;
             }
-            if (0..layout.len() as i32).contains(&py) && (0..layout[0].len() as i32).contains(&px) {
-                // println!("py: {}, px {}", py, px);
-                let pyu = py as usize;
-                let pxu = px as usize;
-                match layout[pyu][pxu] {
-                    'L' => (),
-                    '#' => n_occupied += 1,
+            let yf = y as i32 + d_y * dir_factor;
+            let xf = x as i32 + d_x * dir_factor;
+            // dbg!(yf, xf, layout.len(), layout[0].len());
+            if yf < 0 || xf < 0 || yf >= layout.len() as i32 || xf >= layout[0].len() as i32 {
+                directions_explored[idx] = true;
+            } else {
+                // println!("yf, yx: {}, {}", yf, xf);
+                match layout[yf as usize][xf as usize] {
+                    'L' => {
+                        directions_explored[idx] = true;
+                    }
+                    '#' => {
+                        directions_explored[idx] = true;
+                        n_occupied += 1;
+                    }
                     '.' => (),
                     _ => panic!("Unexpected char encountered"),
                 }
             }
         }
+        // dbg!(directions_explored);
     }
     match layout[y][x] {
         'L' => match n_occupied {
@@ -72,7 +105,7 @@ fn calc_seat_state(layout: &Vec<Vec<char>>, x: usize, y: usize) -> char {
             _ => 'L',
         },
         '#' => match n_occupied {
-            v if v < 4 => '#',
+            v if v < 5 => '#',
             _ => 'L',
         },
         '.' => '.',
