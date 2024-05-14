@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs, iter::zip};
 
 fn main() {
-    let path = "./test.txt";
+    let path = "./input.txt";
     let contents = fs::read_to_string(path).unwrap();
 
     let mut numbers: Vec<_> = contents
@@ -27,36 +27,54 @@ fn main() {
     // dbg!(&counts);
     println!("Result: {}", counts[&1] * counts[&3]);
 
-    let mut unseen: Vec<Vec<usize>> = vec![vec![]];
-    let mut seen: Vec<Vec<usize>> = vec![];
-    // dbg!(&numbers);
-    // dbg!(&unseen);
-    let mut dbg_count = 0;
-    while !unseen.is_empty() {
-        if let Some(arr) = unseen.pop() {
-            let first = *arr.last().unwrap_or(&1) + 1;
-            for i in first..(numbers.len() - 1) {
-                // dbg!(&i);
-                let mut prev_idx = i - 1;
-                while arr.contains(&prev_idx) {
-                    prev_idx -= 1;
-                }
-                let mut next_idx = i + 1;
-                while arr.contains(&next_idx) {
-                    next_idx += 1;
-                }
-                if numbers[next_idx] - numbers[prev_idx] < 4 {
-                    let mut candidate = arr.clone();
-                    candidate.push(i);
-                    unseen.push(candidate);
-                }
+    dbg!(&numbers);
+
+    let deletion_positions = find_del_pos(numbers);
+    dbg!(&deletion_positions);
+
+    let grouped_del_pos = group_del_pos(&deletion_positions);
+    let group_sizes: Vec<usize> = grouped_del_pos.iter().map(|group| group.len()).collect();
+    dbg!(&group_sizes);
+    let mut total_arrangements = 1u64;
+    for group_size in group_sizes {
+        let n_group_arrangements = 2u64.pow(group_size as u32);
+        let n_invalid_arrangements = match group_size {
+            v if v < 3 => 0,
+            v => {
+                let v2 = v - 2;
+                v2 * (v2 + 1) / 2
             }
-            seen.push(arr);
-        }
-        // dbg!(&seen);
-        // dbg!(&unseen);
+        };
+        total_arrangements *= n_group_arrangements - n_invalid_arrangements as u64;
     }
-    // dbg!(&seen);
-    // dbg!(&unseen);
-    println!("Number of charging arrangements: {}", seen.len());
+    println!("Num arrangements: {}", total_arrangements);
+}
+
+fn group_del_pos(del_pos: &Vec<usize>) -> Vec<Vec<i32>> {
+    let mut groups = vec![];
+    let mut last = -1;
+    for pos_usize in del_pos {
+        let pos = *pos_usize as i32;
+        if pos - last != 1 {
+            groups.push(vec![pos]);
+        } else {
+            groups.last_mut().unwrap().push(pos);
+        }
+        last = pos
+    }
+    groups
+}
+
+fn find_del_pos(numbers: Vec<i32>) -> Vec<usize> {
+    let mut deletion_positions = vec![];
+    for i in 1..(numbers.len() - 1) {
+        let jolt_diff = numbers[i + 1] - numbers[i - 1];
+        match jolt_diff {
+            2 => deletion_positions.push(i),
+            3 => panic!("Unexpected jolt diff 3"),
+            v if v > 3 => (),
+            v => panic!("Unexpected jolt diff {}", v),
+        }
+    }
+    deletion_positions
 }
