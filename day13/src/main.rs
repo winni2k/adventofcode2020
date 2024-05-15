@@ -1,9 +1,4 @@
-use std::{fs, iter::zip};
-
-struct Counter {
-    val: u64,
-    i: u64,
-}
+use std::{fs, iter::repeat_with, iter::zip};
 
 fn main() {
     let path = "./input.txt";
@@ -33,41 +28,36 @@ fn find_timestamp_match(bus_ids: &Vec<u64>, offsets: &Vec<usize>) -> u64 {
         .collect();
     let mut bus_id_offset_pairs_sorted = bus_id_offset_pairs.clone();
     bus_id_offset_pairs_sorted.sort_by_key(|&pair| std::u64::MAX - pair.0);
-    // dbg!(&bus_id_offset_pairs_sorted);
-    let mut counter = get_counter(&bus_id_offset_pairs_sorted, Counter { val: 1, i: 1 });
-    let mut loop_counter = 0;
-    loop {
-        // dbg!(counter.val, counter.i);
-        let mut matching_bus_ids = true;
-        for (bus_id, offset) in &bus_id_offset_pairs_sorted {
-            if (counter.val + *offset) % bus_id != 0u64 {
-                // println!("Mismatch: ({} + {}) % {} != 0", counter, offset, bus_id);
-                matching_bus_ids = false;
-                break;
-            }
-        }
-        loop_counter += 1;
-        if loop_counter % 100000 == 0 {
-            println!("Counter: {}", counter.val);
-        }
-        if matching_bus_ids {
-            return counter.val;
-        }
-        counter = get_counter(&bus_id_offset_pairs_sorted, counter);
-    }
+    get_counter(&bus_id_offset_pairs_sorted)
 }
-fn get_counter(ids_offsets: &[(u64, u64)], counter: Counter) -> Counter {
-    let mut i = counter.i + 1;
+fn get_counter(ids_offsets: &[(u64, u64)]) -> u64 {
     // dbg!(i, ids_offsets);
     // ((i * ids_offsets[0].0 - ids_offsets[1].1) as f32 / ids_offsets[1].0 as f32).ceil() as u64;
-    while (ids_offsets[1].1 + ids_offsets[0].0 * i - ids_offsets[0].1) % ids_offsets[1].0 != 0 {
+    // let increments = [0, 1, 2, 3, 4, 5, 6, 7];
+    let mut i = 0u64;
+    let int_seq = repeat_with(|| {
         i += 1;
-    }
-    // dbg!(i);
-    Counter {
-        val: i * ids_offsets[0].0 - ids_offsets[0].1,
-        i,
-    }
+        i
+    });
+    int_seq
+        // .par_bridge()
+        .filter(|&x| {
+            (ids_offsets[1].1 + ids_offsets[0].0 * x - ids_offsets[0].1) % ids_offsets[1].0 == 0
+        })
+        .map(|x| (x, ids_offsets[0].0 * x - ids_offsets[0].1))
+        .find(|(j, counter)| {
+            if j % 10000 == 0 {
+                println!("{j}: {counter}");
+            }
+            for (bus_id, offset) in &ids_offsets[2..ids_offsets.len()] {
+                if (counter + *offset) % bus_id != 0u64 {
+                    return false;
+                }
+            }
+            true
+        })
+        .unwrap()
+        .1
 }
 #[cfg(test)]
 mod tests {
