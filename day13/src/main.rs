@@ -1,7 +1,12 @@
 use std::{fs, iter::zip};
 
+struct Counter {
+    val: u64,
+    i: u64,
+}
+
 fn main() {
-    let path = "./test2.txt";
+    let path = "./input.txt";
     let contents = fs::read_to_string(path).unwrap();
 
     let mut line_iter = contents.lines();
@@ -28,27 +33,42 @@ fn find_timestamp_match(bus_ids: &Vec<u64>, offsets: &Vec<usize>) -> u64 {
         .collect();
     let mut bus_id_offset_pairs_sorted = bus_id_offset_pairs.clone();
     bus_id_offset_pairs_sorted.sort_by_key(|&pair| std::u64::MAX - pair.0);
-    dbg!(&bus_id_offset_pairs_sorted);
-    let mut counter = bus_id_offset_pairs_sorted[0].0 - bus_id_offset_pairs_sorted[0].1;
+    // dbg!(&bus_id_offset_pairs_sorted);
+    let mut counter = get_counter(&bus_id_offset_pairs_sorted, Counter { val: 1, i: 1 });
+    let mut loop_counter = 0;
     loop {
+        // dbg!(counter.val, counter.i);
         let mut matching_bus_ids = true;
         for (bus_id, offset) in &bus_id_offset_pairs_sorted {
-            if (counter + *offset) % bus_id != 0u64 {
+            if (counter.val + *offset) % bus_id != 0u64 {
                 // println!("Mismatch: ({} + {}) % {} != 0", counter, offset, bus_id);
                 matching_bus_ids = false;
                 break;
             }
         }
-        if counter % 10000000 == 0 {
-            println!("Counter: {}", counter);
+        loop_counter += 1;
+        if loop_counter % 100000 == 0 {
+            println!("Counter: {}", counter.val);
         }
         if matching_bus_ids {
-            return counter;
+            return counter.val;
         }
-        counter += bus_id_offset_pairs_sorted[0].0;
+        counter = get_counter(&bus_id_offset_pairs_sorted, counter);
     }
 }
-
+fn get_counter(ids_offsets: &[(u64, u64)], counter: Counter) -> Counter {
+    let mut i = counter.i + 1;
+    // dbg!(i, ids_offsets);
+    // ((i * ids_offsets[0].0 - ids_offsets[1].1) as f32 / ids_offsets[1].0 as f32).ceil() as u64;
+    while (ids_offsets[1].1 + ids_offsets[0].0 * i - ids_offsets[0].1) % ids_offsets[1].0 != 0 {
+        i += 1;
+    }
+    // dbg!(i);
+    Counter {
+        val: i * ids_offsets[0].0 - ids_offsets[0].1,
+        i,
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*; // Import all items from the outer module
