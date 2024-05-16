@@ -10,7 +10,7 @@ fn main() {
         .split(',')
         .map(|w| w.parse().unwrap())
         .collect::<Vec<i32>>();
-    println!("Result: {}", get_nth_num(&input, 2020));
+    println!("Result: {}", get_nth_num(&input, 30000000));
 }
 fn get_nth_num(input: &Vec<i32>, n: usize) -> i32 {
     assert!(input.len() < n);
