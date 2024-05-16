@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs};
 
 #[derive(Debug)]
 struct Memory {
-    mem: HashMap<u32, u64>,
+    mem: HashMap<u64, u64>,
     mask: String,
 }
 
@@ -10,7 +10,7 @@ impl Memory {
     fn new() -> Memory {
         Memory {
             mem: HashMap::new(),
-            mask: String::from("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"),
+            mask: String::from("000000000000000000000000000000000000"),
         }
     }
     fn fill_mask(&mut self, word: &str) {
@@ -18,21 +18,30 @@ impl Memory {
         self.mask.push_str(word);
     }
     fn add_value(&mut self, location_str: &str, value_str: &str) {
-        let location: u32 = location_str[4..(location_str.len() - 1)].parse().unwrap();
-        let mut value = value_str.parse::<u64>().unwrap();
-        // dbg!(&self.mask, value_str);
-        for (idx, mask_char) in self.mask.chars().rev().enumerate() {
-            // dbg!(idx, mask_char, char);
-            // let value_bit = (value >> idx) & 1;
-            match mask_char {
-                'X' => (),
-                '1' => value |= 1 << idx,
-                '0' => value &= !(1 << idx),
-                _ => panic!(),
+        let mut location: u64 = location_str[4..(location_str.len() - 1)].parse().unwrap();
+        let value = value_str.parse::<u64>().unwrap();
+        for (idx, char) in self.mask.chars().rev().enumerate() {
+            if char == '1' {
+                location |= 1 << idx
             }
         }
-        dbg!(location, value);
-        self.mem.insert(location, value);
+        let mut locations: Vec<u64> = vec![location];
+        let mut locations2 = vec![];
+        for (idx, char) in self.mask.chars().rev().enumerate() {
+            if char == 'X' {
+                let bitmask = 1 << idx;
+                let bitmask2 = !bitmask;
+                for loc in &locations {
+                    locations2.push(loc | bitmask);
+                    locations2.push(loc & bitmask2);
+                }
+                locations.clear();
+                locations.append(&mut locations2);
+            }
+        }
+        for loc in locations {
+            self.mem.insert(loc, value);
+        }
     }
 }
 
@@ -80,20 +89,22 @@ mod tests {
         memory.add_value(location_str, value_str);
 
         // then
-        assert_eq!(memory.mem[&7u32], 11u64);
+        assert_eq!(memory.mem[&7], 11u64);
     }
     #[test]
     fn test_add_to_memory_with_mask() {
         // given
         let mut memory = Memory::new();
-        memory.fill_mask("XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X");
-        let location_str = "mem[7]";
+        memory.fill_mask("00000000000000000000000000000000X00X");
+        let location_str = "mem[4]";
         let value_str = "11";
 
         // when
         memory.add_value(location_str, value_str);
 
         // then
-        assert_eq!(memory.mem[&7u32], 73u64);
+        let mut keys = memory.mem.keys().cloned().collect::<Vec<u64>>();
+        keys.sort();
+        assert_eq!(keys, [4u64, 5, 12, 13]);
     }
 }
